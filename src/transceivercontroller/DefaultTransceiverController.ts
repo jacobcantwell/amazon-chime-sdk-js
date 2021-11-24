@@ -234,6 +234,7 @@ export default class DefaultTransceiverController implements TransceiverControll
         const streamId = videoStreamIndex.streamIdForTrack('v_' + transceiver.mid);
         if (streamId !== undefined) {
           for (const [index, recvStreamId] of videosRemaining.entries()) {
+            // `streamId` may still be the same as `recvStreamId`
             if (videoStreamIndex.StreamIdsInSameGroup(streamId, recvStreamId)) {
               transceiver.direction = 'recvonly';
               this.videoSubscriptions[n] = recvStreamId;
@@ -246,37 +247,23 @@ export default class DefaultTransceiverController implements TransceiverControll
           }
         }
       }
-      n += 1;
-    }
 
-    // Next fill in open slots and remove unused
-    n = 1;
-    for (const transceiver of transceivers) {
-      if (transceiver === this._localCameraTransceiver || !this.transceiverIsVideo(transceiver)) {
-        continue;
-      }
-
-      if (transceiver.direction === 'inactive' && videosRemaining.length > 0) {
-        // Fill available slot
-        transceiver.direction = 'recvonly';
-        const streamId = videosRemaining.shift();
-        this.videoSubscriptions[n] = streamId;
-        this.streamIdToTransceiver.set(streamId, transceiver);
-      } else {
-        // Remove if no longer subscribed
-        if (this.videoSubscriptions[n] === 0) {
-          transceiver.direction = 'inactive';
-          for (const [streamId, previousTransceiver] of this.streamIdToTransceiver.entries()) {
-            if (transceiver === previousTransceiver) {
-              this.streamIdToTransceiver.delete(streamId);
-            }
+      if (this.videoSubscriptions[n] === 0) {
+        // Clean up transceiver and mappings for streams that have been unsubscribed from.  Note we do not try to reuse
+        // old inactive transceivers for new streams as Firefox will reuse the last frame from
+        // that transceiver, and additionally we simply don't want to risk wiring up a transceiver
+        // to the incorrect video stream for no real benefit besides possible a smaller SDP size.
+        transceiver.direction = 'inactive';
+        for (const [streamId, previousTransceiver] of this.streamIdToTransceiver.entries()) {
+          if (transceiver === previousTransceiver) {
+            this.streamIdToTransceiver.delete(streamId);
           }
         }
       }
       n += 1;
     }
 
-    // add transceivers for the remaining subscriptions
+    // Add transceivers for the remaining subscriptions
     for (const index of videosRemaining) {
       // @ts-ignore
       const transceiver = this.peer.addTransceiver('video', {

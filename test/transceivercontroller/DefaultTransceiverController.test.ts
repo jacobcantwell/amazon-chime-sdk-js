@@ -408,8 +408,8 @@ describe('DefaultTransceiverController', () => {
 
       videosToReceive = new DefaultVideoStreamIdSet([7]);
       videoSubscriptions = tc.updateVideoTransceivers(videoStreamIndex, videosToReceive);
-      expect(videoSubscriptions).to.deep.equal([0, 7, 0]);
-      verifyTransceiverDirections(['recvonly', 'inactive']);
+      expect(videoSubscriptions).to.deep.equal([0, 0, 0, 7]);
+      verifyTransceiverDirections(['inactive', 'inactive', 'recvonly']);
       subackFrame = new SdkSubscribeAckFrame({
         tracks: [new SdkTrackMapping({ streamId: 7, trackLabel: 'v_7' })],
       });
@@ -418,8 +418,8 @@ describe('DefaultTransceiverController', () => {
 
       videosToReceive = new DefaultVideoStreamIdSet([7, 8]);
       videoSubscriptions = tc.updateVideoTransceivers(videoStreamIndex, videosToReceive);
-      expect(videoSubscriptions).to.deep.equal([0, 7, 8]);
-      verifyTransceiverDirections(['recvonly', 'recvonly']);
+      expect(videoSubscriptions).to.deep.equal([0, 0, 0, 7, 8]);
+      verifyTransceiverDirections(['inactive', 'inactive', 'recvonly', 'recvonly']);
     });
 
     it('will track the mapping of stream id to mid', () => {
